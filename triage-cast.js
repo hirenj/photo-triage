@@ -17,21 +17,55 @@ var WebSocketServer = require('ws').Server, WebSocket = require('ws')
 var sessions = {};
 
 var nodecastor = require('nodecastor');
-var device = new nodecastor.CastDevice({
-      friendlyName: 'Living Room',
-      address: '192.168.2.238',
-      port: 8009
-});
 
-device.on('connect',function() {
-	connected(device);
-});
+var device;
+var watcher_timeout;
 
-nodecastor.scan().on('offline', function(d) {
-    console.log('Lost device');
-    (sessions[d.friendlyName] || []).splice(0,-1);
-  })
-  .start();
+var device_watcher = function() {
+  if ( watcher_timeout ) {
+    return;
+  }
+  watcher_timeout = setTimeout(function() {
+    watcher_timeout = null;
+    reconnect_device();
+    if ( ! device && ! watcher_timeout ) {
+      watcher_timeout = setTimeout(arguments.callee,5000);
+    }
+  },5000);
+};
+
+var reconnect_device = function() {
+  device = new nodecastor.CastDevice({
+        friendlyName: 'Living Room',
+        address: '192.168.2.238',
+        port: 8009
+  });
+
+  device.on('connect',function() {
+    connected(device);
+  });
+
+  device.on('error',function() {
+    console.log('Lost device from error');
+    sessions[device.friendlyName] = (sessions[device.friendlyName] || []).splice(0,-1);  
+    device.stop();
+    device = null;
+    launched = false;
+    device_watcher();
+  });
+
+  device.on('disconnect',function() {
+    console.log('Lost device from disconnect');
+    sessions[device.friendlyName] = (sessions[device.friendlyName] || []).splice(0,-1);  
+    device.stop();
+    launched = false;
+    device = null;
+    device_watcher();
+  });
+
+};
+
+device_watcher();
 
 var current_app_id = '';
 var launched = false;
@@ -56,7 +90,11 @@ var handle_status = function(status,device) {
         if ( ! launched ) {
           launched = true;
           console.log("Launching "+cc_app_id+' application');
-          got_application(a);
+          if (current_app_id === cc_app_id ) {
+            join_application(a);
+          } else {
+            got_application(a);            
+          }
         }
       }
     });
@@ -118,7 +156,6 @@ var session_manager = function(s) {
   };
   var device = s.device;
   console.log("Adding session to device_sessions");
-  console.log(device.friendlyName);
   if ( ! sessions[device.friendlyName]) {
     sessions[device.friendlyName] = [];
   }
@@ -147,6 +184,10 @@ var session_manager = function(s) {
   });
 };
 
+process.on('uncaughtException', function (err) {
+  console.error(err.stack);
+  console.log("Node NOT Exiting...");
+});
 
 wss.on('connection', function(ws) {
     ws.on('close', function() {
