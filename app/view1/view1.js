@@ -16,14 +16,17 @@ angular.module('myApp.view1', ['ngRoute'])
     // Retrieve photo info and ratings from the server.
     $http.get('/photos.json').success(function(data) {
         $scope.photos = data;
-        $scope.socket.send
+        if ($scope.socket) {
+            $scope.socket.send( JSON.stringify({'image' : $scope.getPhotoURL($scope.currentPhoto) }) );
+        }
     });
 
     if ( ! $scope.socket ) {
-        $scope.socket = new WebSocket("ws://localhost:8080/");
-        $scope.socket.addEventListener('connect',function() {
-            JSON.stringify({'image' : $scope.getPhotoURL($scope.currentPhoto) });
-        });
+        var socket = new WebSocket("ws://localhost:8080/");
+        socket.onopen = function() {
+            $scope.socket = socket;
+            $scope.socket.send( JSON.stringify({'image' : $scope.getPhotoURL($scope.currentPhoto) }) );
+        };
     }
 
 
