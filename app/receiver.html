@@ -1,0 +1,50 @@
+<html>
+<head>
+  <script src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+  <style type="text/css">
+    body {
+      padding: 0px;
+      margin: 0px;
+    }
+    #big_image {
+      position: fixed;
+      top: 0px;
+      left: 0px;
+      width: 0px;
+      height: 0px;
+    }
+    #big_image {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<img id="big_image" src=""/>
+<script type="text/javascript">
+  window.tellControllers = function(message) {
+    var customMessageBus = castReceiverManager.getCastMessageBus('urn:x-cast:org.phototriage');
+    customMessageBus.broadcast(JSON.stringify(message));
+  };
+
+  window.addEventListener('load',function() {
+
+    window.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
+
+    var customMessageBus = castReceiverManager.getCastMessageBus('urn:x-cast:org.phototriage');
+    customMessageBus.onMessage = function(message) {
+      var image = JSON.parse(message.data);
+      document.getElementById('big_image').src = image.image;
+    };
+
+    window.castReceiverManager.onReady = function() {
+      tellControllers({"message" : "ready" });
+    };
+
+    window.castReceiverManager.start();
+
+  },false);
+
+</script>
+</body>
+</html>

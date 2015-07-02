@@ -132,6 +132,8 @@ app.post('/save', function(req, res) {
     res.send({});
 });
 
+var casting = require('./triage-cast');
+
 // Fire up the server ----------------------------------------------------------
 var server = app.listen(port, function() {
     console.log('Listening on port %d', server.address().port);
