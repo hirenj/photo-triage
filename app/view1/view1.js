@@ -3,18 +3,18 @@
 angular.module('myApp.view1', ['ngRoute'])
 
 .config(['$routeProvider', function($routeProvider) {
-  $routeProvider.when('/', {
+  $routeProvider.when('/dir/:folder/', {
     templateUrl: 'view1/view1.html',
     controller: 'View1Ctrl'
   });
 }])
 
-.controller('View1Ctrl', ['$scope', '$http', function($scope, $http) {
+.controller('View1Ctrl', ['$scope', '$http', '$routeParams', function($scope, $http, $routeParams) {
     $scope.currentPhoto = 0;
     $scope.photos = [];
-
+    var localdir = $routeParams.folder;
     // Retrieve photo info and ratings from the server.
-    $http.get('/photos.json').success(function(data) {
+    $http.get('/dir/'+localdir+'/photos.json').success(function(data) {
         $scope.photos = data;
         if ($scope.socket) {
             $scope.socket.send( JSON.stringify({'image' : $scope.getPhotoURL($scope.currentPhoto) }) );
@@ -34,7 +34,7 @@ angular.module('myApp.view1', ['ngRoute'])
     $scope.getPhotoURL = function(num) {
         if ($scope.photos.length > 0) {
             var n = num % $scope.photos.length;
-            return '/h:' + 800 + '/' + $scope.photos[n].fname;
+            return '/dir/'+localdir+'/images/h:' + 800 + '/' + $scope.photos[n].fname;
         }
     };
 
@@ -69,7 +69,7 @@ angular.module('myApp.view1', ['ngRoute'])
         
         // POST rating back to the server.
         var data = { index: $scope.currentPhoto, rating: newRating };
-        $http.post('/rate', data).success(function() {
+        $http.post('/dir/'+localdir+'/rate', data).success(function() {
             $scope.photos[$scope.currentPhoto].rating = newRating;
         });
     };
@@ -77,7 +77,7 @@ angular.module('myApp.view1', ['ngRoute'])
     // Function to reset all ratings via http POST.
     // On success, reset ratings in the scope, too.
     $scope.resetAllRatings = function() {
-        $http.post('/rate/reset', {}).success(function() {
+        $http.post('/dir/'+localdir+'/rate/reset', {}).success(function() {
             // set all ratings to zero
             for(var p = 0; p < $scope.photos.length; p++) {
                 $scope.photos[p].rating = 0;
@@ -88,7 +88,7 @@ angular.module('myApp.view1', ['ngRoute'])
     // Make HTTP POST to /save.  We've been rating photos as we go.
     // This tells the server to write to the file.
     $scope.save = function() {
-        $http.post('/save', {}).success(function(data) {
+        $http.post('/dir/'+localdir+'/save', {}).success(function(data) {
         });
     };
 

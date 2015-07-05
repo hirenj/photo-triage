@@ -26,9 +26,11 @@
     "express": "^4.8.5",
     "express-middleware-image": "^0.0.4",
     "glob": "^4.0.5",
+    "linux-mountutils": "^1.0.0",
     "minimist": "^1.1.0",
     "nconf": "^0.7.1",
     "nodecastor": "^0.1.6",
+    "wake_on_lan": "0.0.4",
     "ws": "^0.7.2"
   },
   "devDependencies": {

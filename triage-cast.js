@@ -5,7 +5,7 @@ var util = require('util');
 nconf.argv().env();
 
 // Then load configuration from a designated file.
-nconf.file({ file: 'cc_config.json' });
+nconf.file({ file: 'config.json' });
 
 var cc_app_id = nconf.get('app_id');
 

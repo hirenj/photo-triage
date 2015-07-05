@@ -8,6 +8,15 @@ var express = require('express');
 var emi = require('express-middleware-image');
 var bodyParser = require('body-parser');
 
+var nconf = require('nconf');
+var util = require('util');
+
+// First consider commandline arguments and environment variables, respectively.
+nconf.argv().env();
+
+// Then load configuration from a designated file.
+nconf.file({ file: 'config.json' });
+
 // Parse command line args, if any ---------------------------------------------
 
 var argv = minimist(process.argv.slice(2));
@@ -16,7 +25,6 @@ var photosDir = process.cwd();  // by default
 if ('photos-dir' in argv) {
     photosDir = argv['photos-dir'];
 }
-var ratingsFilePath = path.join(photosDir, 'ratings.json');
 
 var port = 8123; // by default
 if ('p' in argv) {
@@ -29,60 +37,35 @@ if ('cache-dir' in argv) {
 }
 
 // Load photo list -------------------------------------------------------------
+var readPhotolist = function(dirname) {
+	var jpegs = [];
+	var ratingsFilePath = path.join(photosDir, dirname,'ratings.json');
+	if ((fs.existsSync(ratingsFilePath)) && !('reset' in argv)) {
+	    // Load ratings file if it exists, unless --reset is passed
+	    jpegs = require(ratingsFilePath);
+	} else {
+	    // Start from all zeros, load everything matching .jpg or .jpeg
+	    jpegs = glob.sync(
+	        path.join(photosDir, dirname, '*.+(jpg|jpeg)'),
+	        { nocase: true }
+	    ).map(function(fname) {
+	        return {
+	            fname: fname.split(path.sep).slice(-1)[0],
+	            rating: 0
+	        };
+	    });
+	}
+	return jpegs;
+};
 
-var allJpegs = [];
-if ((fs.existsSync(ratingsFilePath)) && !('reset' in argv)) {
-    // Load ratings file if it exists, unless --reset is passed
-    allJpegs = require(ratingsFilePath);
-
-    // If --less-than is passed...
-    if ('less-than' in argv) {
-        var rewriteRatingsFile = false;
-
-        // ...discard low-rated photos
-        allJpegs = allJpegs.filter(function(photo) {
-            if (photo.rating < argv['less-than']) {
-                
-                // output rejected photo's filename
-                process.stdout.write(photo.fname + '\n');
-
-                if (argv['_'].indexOf('remove') >= 0) {
-                    // If 'remove' is present, then delete photo
-                    // and all files with the same base name
-                    var extension = path.extname(photo.fname);
-                    var remove = photo.fname.replace(extension, '.*');
-                    glob.sync(remove, { nocase: true }).map(function(y) {
-                        fs.unlinkSync(y);
-                        process.stdout.write('  removed ' + y + '\n');
-                    });
-                    // We'll also need to overwrite the ratings.json file later
-                    rewriteRatingsFile = true;
-                }
-                return false; // discard this photo from allJpegs
-            }
-            return true; // keep this entry in allJpegs
-        });
-
-        if (rewriteRatingsFile) save();
-        process.exit(0);
-    }
-} else {
-    // Start from all zeros, load everything matching .jpg or .jpeg
-    allJpegs = glob.sync(
-        path.join(photosDir, '*.+(jpg|jpeg)'),
-        { nocase: true }
-    ).map(function(fname) {
-        return {
-            fname: fname.split(path.sep).slice(-1)[0],
-            rating: 0
-        };
-    });
-}
 
 // Save and exit functions -----------------------------------------------------
-function save() {
+function save(dirname) {
+	if ( ! dirname ) {
+		return;
+	}
     // write 2-space indented file
-    fs.writeFileSync(ratingsFilePath, JSON.stringify(allJpegs, null, 2));
+    fs.writeFileSync(path.join(photosDir, dirname,'ratings.json'), JSON.stringify(allJpegs[dirname], null, 2));
     console.log('saved');
 }
 
@@ -92,47 +75,125 @@ function exit() {
 }
 process.on('SIGINT', exit);
 
+function getDirectories(path) {
+  return fs.readdirSync(path).filter(function (file) {
+    return fs.statSync(path+'/'+file).isDirectory();
+  });
+};
+
 // Express server --------------------------------------------------------------
 var app = express();
 
 // Parse JSON posted to server
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+	extended: true
+})); 
+const allJpegs = {};
 
-// Serve smaller images at /h:xxx/filename.jpg
+var middlewares = {};
+
+var isActive = null;
+
+app.use('/dir/:dirname/images/*',function(req, res, next) {
+	isActive = true;
+	isActive = setTimeout(function() {
+		tryUnmounting(rescanPhotos);
+	},1000*60*30);
+	var newurl = req.originalUrl.replace(/.*\/images/,'');
+	var urlbits = newurl.split('/');
+	urlbits[2] = req.params['dirname']+'/'+urlbits[2];
+	req.originalUrl = urlbits.join('/');
+	next();
+});
+
 app.use(emi({
     root: photosDir,
     cache: cacheDir,
     quality: 60
 }));
 
-// Static server for the angular.js app
-app.use('/', express.static(path.join(__dirname , 'app')));
+var rescanPhotos = function() {
+	Object.keys(allJpegs).forEach(function(dir) {
+		delete allJpegs[dir];
+	});
+	getDirectories(photosDir).forEach(function(dirname) {
+		// Serve smaller images at /h:xxx/filename.jpg
+		allJpegs[dirname] = readPhotolist(dirname);
+	});	
+};
 
-// A few URLs for front/back end communications --------------------------------
-app.get('/photos.json', function(req, res){
-  res.send(allJpegs);
+
+app.get('/',function(req,res) {
+	var wol = require('wake_on_lan');
+	wol.wake(nconf.get('nas_mac'));
+	res.sendFile(path.join(__dirname , 'app','root.html'));
 });
 
-app.post('/rate', function(req, res) {
+app.get('/dirs.json',function(req,res) {
+	res.send(Object.keys(allJpegs));
+});
+
+// Static server for the angular.js app
+app.use('/dir/:dirname/', express.static(path.join(__dirname , 'app')));
+
+// A few URLs for front/back end communications --------------------------------
+app.get('/dir/:dirname/photos.json', function(req, res){
+  res.send(allJpegs[req.params['dirname']]);
+});
+
+app.post('/dir/:dirname/rate', function(req, res) {
     var index = parseInt(req.body.index);
     var rating = parseInt(req.body.rating);
-    allJpegs[index].rating = rating;
+    allJpegs[req.params['dirname']][index].rating = rating;
     res.send({});
 });
 
-app.post('/rate/reset', function(req, res) {
+app.post('/dir/:dirname/rate/reset', function(req, res) {
     for(var index=0; index < allJpegs.length; index++) {
-        allJpegs[index].rating = 0;
+        allJpegs[req.params['dirname']][index].rating = 0;
     }
     res.send({});
 });
 
-app.post('/save', function(req, res) {
-    save();
+app.post('/dir/:dirname/save', function(req, res) {
+    save(req.params['dirname']);
     res.send({});
 });
 
 var casting = require('./triage-cast');
+
+rescanPhotos();
+
+var mount_password = null;
+
+var tryMounting = function(callback) {
+	if ( ! mount_password ) {
+		callback();
+		return;
+	}
+	require('./osx-mountutils').mount('//'+nconf.get('nas_username')+':'+mount_password+'@'+nconf.get('nas_host')+'/'+nconf.get('nas_path'),nconf.get('nas_mount_path'),{'fstype':'smbfs'},callback);
+};
+
+var tryUnmounting = function(callback) {
+	mount_password = null;
+	require('./osx-mountutils').umount(nconf.get('nas_mount_path'),false,null,callback);
+};
+
+app.get('/logout',function(req,res) {
+	tryUnmounting(function() {
+		res.send({'status' : 'OK'});
+		rescanPhotos();
+	});
+});
+
+app.post('/login',function(req,res) {
+	mount_password = req.body['password'];
+	tryMounting(function() {
+		res.send({"status" : "OK"});
+		rescanPhotos();
+	});
+});
 
 // Fire up the server ----------------------------------------------------------
 var server = app.listen(port, function() {

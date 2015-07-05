@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Photo triage</title>
+</head>
+<body>
+<form action="/login" method="post">
+  <input name="password" type="password" value="Hi">
+  <button>Log in</button>
+</form>
+<script type="text/javascript">
+	function reqListener () {
+	  var dirs = JSON.parse(this.responseText);
+	  dirs.forEach(function(dir) {
+	  	var anchor = document.createElement('a');
+	  	anchor.setAttribute('href','/dir/'+dir+'/');
+	  	anchor.textContent = dir;
+	  	document.body.appendChild(anchor);
+	  	document.body.appendChild(document.createElement('br'));
+	  });
+	}
+
+	var oReq = new XMLHttpRequest();
+	oReq.onload = reqListener;
+	oReq.open("get", "/dirs.json", true);
+	oReq.send();
+</script>
+</body>
+</html>
