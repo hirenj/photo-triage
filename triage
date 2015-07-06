@@ -102,7 +102,7 @@ app.use('/dir/:dirname/images/*',function(req, res, next) {
 	},1000*60*30);
 	var newurl = req.originalUrl.replace(/.*\/images/,'');
 	var urlbits = newurl.split('/');
-	urlbits[2] = req.params['dirname']+'/'+urlbits[2];
+	urlbits[2] = req.params['dirname']+'/'+unescape(urlbits[2]);
 	req.originalUrl = urlbits.join('/');
 	next();
 });
@@ -126,8 +126,14 @@ var rescanPhotos = function() {
 
 app.get('/',function(req,res) {
 	var wol = require('wake_on_lan');
-	wol.wake(nconf.get('nas_mac'));
+	if ( ! host_up ) {
+		wol.wake(nconf.get('nas_mac'));		
+	}
 	res.sendFile(path.join(__dirname , 'app','root.html'));
+});
+
+app.get('/receiver.html',function(req,res) {
+	res.sendFile(path.join(__dirname , 'app','receiver.html'));
 });
 
 app.get('/dirs.json',function(req,res) {
@@ -165,10 +171,50 @@ var casting = require('./triage-cast');
 
 rescanPhotos();
 
+
+function testPort(port, host, cb) {
+  require('net').createConnection(port, host).on("connect", function(e) {
+    cb("success", e); 
+  }).on("error", function(e) {
+    cb("failure", e);
+  });
+};
+
+var host_up = false;
+
+var testHost = function() {
+	testPort(445,nconf.get('nas_host'),function(state,error) {
+		if (state == "success") {
+			if (! host_up ) {
+				console.log("Host now is online ",state);
+			}
+			host_up = true;			
+		} else {
+			if ( host_up ) {
+				console.log("Host now offline ",state);
+			}
+			host_up = false;
+		}
+	});
+};
+
+var host_tester = function() {
+	setTimeout(function() {
+		testHost();
+		setTimeout(arguments.callee,5000);
+	},5000);
+};
+
+host_tester();
+
 var mount_password = null;
 
 var tryMounting = function(callback) {
 	if ( ! mount_password ) {
+		callback();
+		return;
+	}
+	if ( ! host_up ) {
 		callback();
 		return;
 	}
@@ -177,6 +223,7 @@ var tryMounting = function(callback) {
 
 var tryUnmounting = function(callback) {
 	mount_password = null;
+	casting.state.enabled = false;
 	require('./osx-mountutils').umount(nconf.get('nas_mount_path'),false,null,callback);
 };
 
@@ -188,6 +235,7 @@ app.get('/logout',function(req,res) {
 });
 
 app.post('/login',function(req,res) {
+	casting.state.enabled = true;
 	mount_password = req.body['password'];
 	tryMounting(function() {
 		res.send({"status" : "OK"});

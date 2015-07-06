@@ -9,8 +9,6 @@ nconf.file({ file: 'config.json' });
 
 var cc_app_id = nconf.get('app_id');
 
-var mirror_devices = nconf.get('imagemirrors');
-
 var WebSocketServer = require('ws').Server, WebSocket = require('ws')
   , wss = new WebSocketServer({port: 8080});
 
@@ -20,6 +18,7 @@ var nodecastor = require('nodecastor');
 
 var device;
 var watcher_timeout;
+var state = {'enabled':false};
 
 var device_watcher = function() {
   if ( watcher_timeout ) {
@@ -35,6 +34,9 @@ var device_watcher = function() {
 };
 
 var reconnect_device = function() {
+  if ( ! state.enabled ) {
+    return;
+  }
   device = new nodecastor.CastDevice({
         friendlyName: 'Living Room',
         address: '192.168.2.238',
@@ -87,7 +89,7 @@ var handle_status = function(status,device) {
     device.application(cc_app_id, function(err, a) {
       handle_status = orig_handle_status;
       if (!err) {
-        if ( ! launched ) {
+        if ( ! launched && state.enabled == true ) {
           launched = true;
           console.log("Launching "+cc_app_id+' application');
           if (current_app_id === cc_app_id ) {
@@ -163,7 +165,6 @@ var session_manager = function(s) {
 
   device_sessions.push(connection_block);
 
-  console.log(sessions);
 
   s.on('message', function(data) {
     if (data.type == 'CLOSE') {
@@ -215,3 +216,5 @@ wss.on('connection', function(ws) {
       }
     });
 });
+
+exports.state = state;
