@@ -2,7 +2,20 @@ var mountutils = require('linux-mountutils');
 var fs = require('fs');
 
 if (require('os').platform() !== 'darwin') {
-	exports = mountutils;
+	exports.umount = mountutils.umount;
+	exports.isMounted = mountutils.isMounted;
+	exports.mount = function(dev,path,options,callback) {
+		options = options || {};
+		if (options.fstype == 'smbfs') {
+			var url_components = dev.split('@');
+			if (url_components.length > 1) {
+				dev = "//"+url_components[1];
+				var credentials = url_components[0].replace('//','').split(':');
+				options.fsopts = "user="+credentials[0]+",password="+credentials[1];
+			}
+		}
+		return mountutils.mount(dev,path,options,callback);
+	}
 } else {
 	exports.mount = function(dev, path, options, callback) {
 		options = options || {};
