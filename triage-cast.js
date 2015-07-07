@@ -38,8 +38,8 @@ var reconnect_device = function() {
     return;
   }
   device = new nodecastor.CastDevice({
-        friendlyName: 'Living Room',
-        address: '192.168.2.238',
+        friendlyName: nconf.get('chromecast_friendly'),
+        address: nconf.get('chromecast_host'),
         port: 8009
   });
 

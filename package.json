@@ -24,7 +24,7 @@
   "dependencies": {
     "body-parser": "^1.8.0",
     "express": "^4.8.5",
-    "express-middleware-image": "^0.0.4",
+    "express-middleware-image": "hirenj/express-middleware-image",
     "glob": "^4.0.5",
     "linux-mountutils": "^1.0.0",
     "minimist": "^1.1.0",
