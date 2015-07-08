@@ -7,6 +7,8 @@ if (require('os').platform() !== 'darwin') {
 	exports.mount = function(dev,path,options,callback) {
 		options = options || {};
 		if (options.fstype == 'smbfs') {
+			options.fstype = 'cifs';
+			options.noSudo = true;
 			var url_components = dev.split('@');
 			if (url_components.length > 1) {
 				dev = "//"+url_components[1];

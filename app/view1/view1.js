@@ -22,7 +22,7 @@ angular.module('myApp.view1', ['ngRoute'])
     });
 
     if ( ! $scope.socket ) {
-        var socket = new WebSocket("ws://localhost:8080/");
+        var socket = new WebSocket("ws://"+window.location.hostname+":8080/");
         socket.onopen = function() {
             $scope.socket = socket;
             $scope.socket.send( JSON.stringify({'image' : $scope.getPhotoURL($scope.currentPhoto) }) );
