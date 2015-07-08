@@ -18,6 +18,12 @@ if (require('os').platform() !== 'darwin') {
 		}
 		return mountutils.mount(dev,path,options,callback);
 	}
+	exports.umount = function(path, isDevice, options, callback) {
+		var self = this;
+		options = options || {};
+		options.noSudo = true;
+		return mountutils.umount.call(self,path,isDevice,options,callback);
+	};
 } else {
 	exports.mount = function(dev, path, options, callback) {
 		options = options || {};

@@ -30,7 +30,7 @@ GROUP=root
 # Node.js
 NODE_PROGRAM=/usr/local/node/bin/node
 NODE_SCRIPT=/var/photo-triage/triage
-NODE_ARGS="$NODE_SCRIPT"
+NODE_ARGS="$NODE_SCRIPT --photos-dir /mnt/photos --cache-dir /tmp/blah -p 80"
 
 # Daemon supervisor config
 SUPERVISOR=/usr/bin/daemon
