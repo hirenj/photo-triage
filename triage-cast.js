@@ -91,10 +91,11 @@ var handle_status = function(status,device) {
       if (!err) {
         if ( ! launched && state.enabled == true ) {
           launched = true;
-          console.log("Launching "+cc_app_id+' application');
           if (current_app_id === cc_app_id ) {
+            console.log("Joining "+cc_app_id+' application');
             join_application(a);
           } else {
+            console.log("Launching "+cc_app_id+' application');
             got_application(a);            
           }
         }
