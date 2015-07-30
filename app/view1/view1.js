@@ -43,6 +43,12 @@ angular.module('myApp.view1', ['ngRoute'])
         return $scope.photos[$scope.currentPhoto].rating;
     };
 
+    $scope.isDeleted = function() {
+        if ($scope.photos.length > 0) {
+            return $scope.photos[$scope.currentPhoto].rating < 0 ? 'sign' : 'circle';
+        }
+    };
+
     // Return an array of (unique) space-separated CSS classes
     // for building the glyphicon stars
     $scope.getStars = function() {

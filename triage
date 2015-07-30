@@ -110,6 +110,7 @@ app.use('/dir/:dirname/images/*',function(req, res, next) {
 app.use(emi({
     root: photosDir,
     cache: cacheDir,
+    rotate: true,
     quality: 60
 }));
 

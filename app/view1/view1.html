@@ -7,6 +7,10 @@
         <p class="info">{{ currentPhoto + 1 }} of {{ photos.length }}</p>
         <p class="rating">
             <span style="display: none;" ng-click="rate(0)" shortcut="48" shortcut-trigger-handler></span>
+            <span class="stars" >
+                <span class="glyphicon glyphicon-remove-{{ isDeleted() }}" ng-click="rate(-1)" ></span>
+            </span>
+
             <span class="stars" ng-repeat="star in getStars()">
                 <span class="glyphicon glyphicon-{{star}}" ng-click="rate($index+1)" shortcut="{{ 49 + $index }}" shortcut-trigger-handler></span>
             </span>
