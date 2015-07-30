@@ -96,7 +96,7 @@ var middlewares = {};
 var isActive = null;
 
 app.use('/dir/:dirname/images/*',function(req, res, next) {
-	isActive = true;
+	clearTimeout(isActive);
 	isActive = setTimeout(function() {
 		tryUnmounting(rescanPhotos);
 	},1000*60*30);
