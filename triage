@@ -163,6 +163,23 @@ app.post('/dir/:dirname/rate/reset', function(req, res) {
     res.send({});
 });
 
+app.post('/dir/:dirname/rotate',function(req,res) {
+	//1 none 6 counter-clockwise, 8 clockwise
+	var direction = req.body.rotate;
+	var orig_filename = allJpegs[req.params['dirname']][req.body.index].fname;
+	var base_filename = orig_filename.replace(/\.JPG/i, '');
+	var orig_file_path = path.join(photosDir, req.params['dirname'], orig_filename);
+	var thumb_file_path = path.join(cacheDir, req.params['dirname'], base_filename+'_h800.jpg');
+	//2015-03-01
+	require('child_process').exec('/usr/bin/exiftool -Orientation='+direction+' -n '+orig_file_path,function() {
+		var touch_date = new Date();
+		touch_date.setTime(touch_date.getTime() - 1000*60*60*48);
+		fs.utimes(thumb_file_path,touch_date,touch_date,function() {
+			res.send({});
+		});
+	});
+});
+
 app.post('/dir/:dirname/save', function(req, res) {
     save(req.params['dirname']);
     res.send({});

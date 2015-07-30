@@ -98,6 +98,13 @@ angular.module('myApp.view1', ['ngRoute'])
         });
     };
 
+    $scope.rotate = function(direction) {
+        // POST rating back to the server.
+        var data = { index: $scope.currentPhoto, rotate: direction };
+        $http.post('/dir/'+localdir+'/rotate', data).success(function() {
+        });
+    };
+
     // Move <delta> photos through the array, wrapping back
     // around at zero/end-of-array
     $scope.movePhoto = function(delta) {

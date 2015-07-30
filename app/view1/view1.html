@@ -15,6 +15,9 @@
                 <span class="glyphicon glyphicon-{{star}}" ng-click="rate($index+1)" shortcut="{{ 49 + $index }}" shortcut-trigger-handler></span>
             </span>
         </p>
+        <p><span ng-click="rotate(8)" id="rotate_left" class="glyphicon glyphicon-hand-left" ></span>
+        <a ng-click="rotate(1)" id="rotate_none" class="glyphicon glyphicon-hand-up" ></a>
+        <a ng-click="rotate(6)" id="rotate_right" class="glyphicon glyphicon-hand-right" ></a>
         <p>
             <a ng-click="save()" id="save" class="btn btn-link save" shortcut="83,115" shortcut-trigger-handler>Save</a>
         </p>
