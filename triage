@@ -43,6 +43,21 @@ var readPhotolist = function(dirname) {
 	if ((fs.existsSync(ratingsFilePath)) && !('reset' in argv)) {
 	    // Load ratings file if it exists, unless --reset is passed
 	    jpegs = require(ratingsFilePath);
+	    all_fnames = jpegs.map(function(entry) { return entry.fname; });
+	    new_jpegs = glob.sync(
+	        path.join(photosDir, dirname, '*.+(jpg|jpeg)'),
+	        { nocase: true }
+	    ).map(function(fname) {
+	        return {
+	            fname: fname.split(path.sep).slice(-1)[0],
+	            rating: 0
+	        };
+	    }).filter(function(entry) {
+	    	return all_fnames.indexOf(entry.fname) < 0;
+	    });
+	    if (new_jpegs.length > 0) {
+	    	jpegs = jpegs.concat(new_jpegs);
+	    }
 	} else {
 	    // Start from all zeros, load everything matching .jpg or .jpeg
 	    jpegs = glob.sync(
