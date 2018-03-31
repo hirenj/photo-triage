@@ -21,7 +21,7 @@ angular.module('myApp.view1', ['ngRoute'])
         }
     });
 
-    if ( ! $scope.socket ) {
+    if ( false && ! $scope.socket ) {
         var socket = new WebSocket("ws://"+window.location.hostname+":8080/");
         socket.onopen = function() {
             $scope.socket = socket;
@@ -113,6 +113,29 @@ angular.module('myApp.view1', ['ngRoute'])
             newPhoto += $scope.photos.length;
         }
         $scope.currentPhoto = newPhoto;
-        $scope.socket.send(JSON.stringify({'image' : $scope.getPhotoURL(newPhoto) }));
+        if ($scope.socket) {
+          $scope.socket.send(JSON.stringify({'image' : $scope.getPhotoURL(newPhoto) }));
+        }
+        clearTimeout($scope.nextTimeout);
+        clearTimeout($scope.nextTimeout2);
+        clearTimeout($scope.nextTimeout3);
+        clearTimeout($scope.nextTimeout4);
+        clearTimeout($scope.nextTimeout5);
+
+        $scope.nextTimeout = setTimeout(function() {
+            $http.get($scope.getPhotoURL(newPhoto+1));
+        },1000);
+        $scope.nextTimeout2 = setTimeout(function() {
+            $http.get($scope.getPhotoURL(newPhoto+2));
+        },1250);
+        $scope.nextTimeout3 = setTimeout(function() {
+            $http.get($scope.getPhotoURL(newPhoto+2));
+        },1300);
+        $scope.nextTimeout4 = setTimeout(function() {
+            $http.get($scope.getPhotoURL(newPhoto+2));
+        },1350);
+        $scope.nextTimeout5 = setTimeout(function() {
+            $http.get($scope.getPhotoURL(newPhoto+2));
+        },1400);
     };
 }]);
