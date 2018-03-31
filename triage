@@ -203,7 +203,7 @@ app.post('/dir/:dirname/save', function(req, res) {
     res.send({});
 });
 
-var casting = require('./triage-cast');
+//var casting = require('./triage-cast');
 
 rescanPhotos();
 
@@ -259,7 +259,7 @@ var tryMounting = function(callback) {
 
 var tryUnmounting = function(callback) {
 	mount_password = null;
-	casting.state.enabled = false;
+	//casting.state.enabled = false;
 	require('./osx-mountutils').umount(nconf.get('nas_mount_path'),false,null,callback);
 };
 
@@ -271,7 +271,7 @@ app.get('/logout',function(req,res) {
 });
 
 app.post('/login',function(req,res) {
-	casting.state.enabled = true;
+	//casting.state.enabled = true;
 	mount_password = req.body['password'];
 	tryMounting(function() {
 		res.send({"status" : "OK"});
